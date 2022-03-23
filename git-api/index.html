@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <title>Document</title>
+</head>
+
+<script>
+    async function buildHistory() {
+        const historyMap = localStorage.getItem("git-history")
+
+        const list = document.getElementById("git_list_recents")
+        let data = `<li class="list-group-item" style="border: 0px;">
+                            <div style="text-align: center;"><a
+                                    style="font-size: 20px; font-weight: lighter;">Recents</a>
+                            </div>
+                        </li>`
+        const dict = await JSON.parse(historyMap)
+        const cardList = await Object.entries(dict)
+
+        cardList.forEach((element) => {
+            data += `<li class="list-group-item" style="border: 0px;">
+                            <img src="${element[1].pic}" width="50px"/>
+                            <div style="text-align: center;")>
+                                <a href="javascript:autoLoad('${element[1].nick}')" class="card-link">${element[1].nick}</a>
+                            </div>
+                            </li>`
+        })
+
+        list.innerHTML = data
+    }
+
+    async function recentsCache(user) {
+        let historyMap = localStorage.getItem("git-history")
+
+        if (!historyMap)
+            localStorage.setItem("git-history", ` {}`)
+
+        historyMap = localStorage.getItem("git-history")
+        const dict = JSON.parse(historyMap)
+        dict[`${user.login}`] = {
+            "nick": user.login,
+            "name": user.name || user.login,
+            "pic": user.avatar_url,
+            "url": user.html_url
+        }
+
+        localStorage.setItem("git-history", JSON.stringify(dict))
+        await buildHistory()
+    }
+
+
+    async function getRep(user) {
+        const data = await fetch(`https://api.github.com/users/${user}/repos`)
+        const repos = await data.json()
+        await buildRepos(repos)
+    }
+
+    async function buildRepos(repos) {
+        const list = document.getElementById("git_list_repos")
+        let content = ""
+        repos.forEach((element) => {
+            content += `<li class="list-group-item d-flex justify-content-between align-items-start">
+                <div class="ms-2 me-auto">
+                    <div class="fw-bold " style="text-align: start;">
+                    <a href="${element.html_url}" class="text-decoration-none" >${element.name}</a>
+                    </div>
+                    <div style="text-align: left; font-size: 12px"> ${element.description || "\n "} </div>
+                    </div>
+                <span class="badge bg-primary rounded-pill">🌟 ${element.stargazers_count}</span>
+            </li>`
+        })
+
+        list.innerHTML = content
+
+    }
+
+    async function formatData(user) {
+
+        const git_pic = document.getElementById("git_pic")
+        const git_name = document.getElementById("git_name")
+        const git_login = document.getElementById("git_login")
+        const git_bio = document.getElementById("git_bio")
+        const git_followers = document.getElementById("git_followers")
+        const git_following = document.getElementById("git_following")
+        const git_repos = document.getElementById("git_repos")
+        const git_location = document.getElementById("git_location")
+
+        git_pic.src = user.avatar_url || "https://avatars.githubusercontent.com/u/9919?v=4"
+        git_name.textContent = user.name || " "
+        git_login.textContent = "@" + user.login
+        git_login.href = user.html_url
+        git_bio.textContent = user.bio || " "
+        git_followers.textContent = user.followers
+        git_following.textContent = user.following
+        git_repos.textContent = user.public_repos
+        git_location.textContent = user.location
+    }
+
+    async function gitAPI(nickname) {
+        const data = await fetch(`https://api.github.com/users/${nickname}`)
+        const user = await data.json()
+        await formatData(user)
+        await recentsCache(user)
+    }
+
+    async function getUser() {
+        const search_form = document.getElementById("git_input_nick")
+        const nickname = search_form.value.trim()
+
+        if (nickname != "") {
+            await gitAPI(nickname)
+            await getRep(nickname)
+        }
+    }
+
+    async function autoLoad(nickname) {
+        await gitAPI(nickname)
+        await getRep(nickname)
+    }
+</script>
+
+<body onload="autoLoad('torvalds')">
+    <div class="container-fluid" style="width: max-content;">
+        <div class="row align-content-center ">
+            <div class="col-4" style="padding: 0px; border: 0px; width: max-content;">
+                <nav class="navbar navbar-light bg-light"
+                    style="padding-left: 15px; padding-right: 15px; border-radius: 10px; width: 400px; ">
+                    <form class="d-flex">
+                        <input id="git_input_nick" class="form-control me-2" type="search" placeholder="Search"
+                            aria-label="Search">
+                        <button class="btn btn-outline-success" type="button" onclick="getUser()">Search</button>
+                    </form>
+                </nav>
+            </div>
+        </div>
+        <div class="row align-items-center">
+            <div class="col" style="padding: 0px; border: 0px;">
+                <div class="card"
+                    style="width: 400px; text-align: center; border-radius: 15px; margin-top: 20px; padding-top: 15px;">
+                    <div class="card-img " style="border-bottom: 0px; ">
+                        <img id="git_pic" class="rounded" src="https://avatars.githubusercontent.com/u/9919?v=4"
+                            width="250px" />
+                    </div>
+                    <div class="card-body">
+                        <p id="git_name" class="fs-1 fw-light" style="text-align: center;">Git Hub</p>
+                        <div style="text-align: start; margin-bottom: 15px;">
+                            <p class="fs-6" style="padding: 0px; margin: 0px;">
+                                <a id="git_login" href="#" class="text-decoration-none">@github</a>
+                            </p>
+                            <p id="git_bio" class=" fs-6" style="padding: 0px; margin: 0px;">How people build software.
+                            </p>
+                            <p class=" fs-6" style="padding: 0px; margin: 0px;">🌎 <a id="git_location"></a>
+                            </p>
+                        </div>
+
+                        <ul class="list-group  justify-content-center">
+                            <li class="list-group-item"
+                                style="border-radius: 25px; padding-top: 1px; padding-left: 1px; margin-bottom: 5px;">
+                                📦Repos: <a id="git_repos">409</a>
+                            </li>
+                            <li class="list-group-item"
+                                style="border-radius: 25px; padding-top: 1px; padding-left: 1px; margin-bottom: 5px;">
+                                🕸Followers: <a id="git_followers">0</a>
+                            </li>
+                            <li class="list-group-item"
+                                style="border-radius: 25px; padding-top: 1px; padding-left: 1px; margin-bottom: 5px;">
+                                🦑Following: <a id="git_following">0</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row align-content-center">
+            <div class="col" style="padding: 0px; border: 0px; width: max-content;">
+                <div class="card"
+                    style="width: 400px; text-align: center; border-radius: 15px; margin-top: 20px; padding-top: 15px; margin-bottom: 15px;">
+                    <div class="card-body">
+                        <ol id="git_list_repos" class="list-group list-group-numbered">
+
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card"
+                    style="width: 120px; text-align: center; border-radius: 15px; margin-top: 20px; padding-top: 15px; margin-bottom: 25px;">
+                    <ol id="git_list_recents" class="list-group list-group">
+                        <li class="list-group-item" style="border: 0px;">
+                            <div style="text-align: center;"><a
+                                    style="font-size: 20px; font-weight: lighter;">Recents</a>
+                            </div>
+                        </li>
+                        <li class="list-group-item" style="border: 0px;">
+                            <img src="https://avatars.githubusercontent.com/u/9919?v=4" width="50px">
+                            <div style="text-align: center;">
+                                <a href="https://github.com/torvalds" class="text-decoration-none">Linus Torvalds</a>
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
