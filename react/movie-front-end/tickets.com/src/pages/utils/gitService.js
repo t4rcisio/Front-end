@@ -16,7 +16,7 @@ function storeCoockie({ login, avatar_url, html_url }) {
     avatar_url,
   };
 
-  if (Object.keys(mapStorage).length === 10) console.log("10");
+  //if (Object.keys(mapStorage).length === 10) console.log("10");
 
   localStorage.setItem(local, JSON.stringify(mapStorage));
 }
